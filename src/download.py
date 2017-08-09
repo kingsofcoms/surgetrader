@@ -13,7 +13,7 @@ import ConfigParser
 logger = logging.getLogger(__name__)
 
 
-@retry(tries=10, delay=3)
+#@retry(tries=10, delay=3)
 def main(ini):
 
     config_file = ini

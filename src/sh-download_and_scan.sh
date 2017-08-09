@@ -6,8 +6,10 @@ PY=/home/schemelab/install/miniconda/bin/python
 
 $PY download.py ${INI[0]}
 
-for I in $INI
+echo " -------------------- DOWNLOAD COMPLETE"
+
+for I in ${INI[@]}
 do
     echo "   * * * Buying using $I"
-    $PY buysell.py $I --buy 1
+    $PY buy.py $I --buy 1
 done

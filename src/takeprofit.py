@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 
 
-from retry import retry
-# core
-import logging
-from datetime import datetime
 
-# pypi
-import argh
+# core
 import collections
+import ConfigParser
+from datetime import datetime
 import logging
 import pprint
 
-import mybittrex
+# pypi
+import argh
+from retry import retry
 from bittrex.bittrex import SELL_ORDERBOOK
 
+# local
+import mybittrex
 from db import db
 
 
-# local
 
 logging.basicConfig(
     format='%(lineno)s %(message)s',
@@ -43,30 +43,37 @@ def __takeprofit(entry, gain):
     x_percent = gain / 100.0
     tp = entry * x_percent + entry
 
-    print("On an entry of {0:f}, TP={1:.8f} for a {2} percent gain".format(
+    print("On an entry of {0:.8f}, TP={1:.8f} for a {2} percent gain".format(
         entry, tp, gain))
 
     return tp
 
-def _takeprofit(percent, row):
+def _takeprofit(b, percent, row):
 
     tp = __takeprofit(entry=row.purchase_price, gain=percent)
 
+    print "b.sell_limit({}, {}, {})".format(row.market, row.amount, tp)
     r = b.sell_limit(row.market, row.amount, tp)
     pprint.pprint(r)
 
-    row.update_record(selling_price=tp)
+    if r['success']:
+        row.update_record(selling_price=tp)
+        db.commit()
 
 
-@retry()
-def takeprofit(p):
+#@retry()
+def takeprofit(b, p):
 
     print "Finding takeprofit rows..."
     for row in db(db.buy.selling_price == None).select():
         print "\t", row
-        _takeprofit(p, row)
 
-    db.commit()
+        o = b.get_order(row['order_id'])
+        print "unsold row {}".format(pprint.pformat(o))
+        o = o['result']
+        if not o['IsOpen']:
+            _takeprofit(b, p, row)
+
 
 
 def main(ini, dry_run=False):
@@ -77,7 +84,7 @@ def main(ini, dry_run=False):
 
     b = mybittrex.make_bittrex(config)
     percent = int(config.get('takeprofit', 'percent'))
-    takeprofit(percent)
+    takeprofit(b, percent)
 
 if __name__ == '__main__':
     argh.dispatch_command(main)

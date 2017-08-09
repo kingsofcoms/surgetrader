@@ -1,7 +1,7 @@
 from pydal import DAL, Field
 from datetime import datetime
 
-db = DAL('sqlite://download.db')
+db = DAL('sqlite://storage.sqlite3')
 
 market = db.define_table(
     'market',
@@ -9,17 +9,19 @@ market = db.define_table(
     Field('ask', type='double'),
     Field('timestamp', type='datetime', default=datetime.now)
     )
-db.executesql('CREATE INDEX IF NOT EXISTS tidx ON market (timestamp);')
-db.executesql('CREATE INDEX IF NOT EXISTS m_n_idx ON market (name);')
+
+#db.executesql('CREATE INDEX IF NOT EXISTS tidx ON market (timestamp);')
+#db.executesql('CREATE INDEX IF NOT EXISTS m_n_idx ON market (name);')
 
 buy = db.define_table(
     'buy',
+    Field('order_id'),
     Field('market'),
     Field('purchase_price', type='double'),
     Field('selling_price', type='double'),
     Field('amount', type='double'),
     )
-db.executesql('CREATE INDEX IF NOT EXISTS sidx ON buy (selling_price);')
+#db.executesql('CREATE INDEX IF NOT EXISTS sidx ON buy (selling_price);')
 
 picks = db.define_table(
     'picks',

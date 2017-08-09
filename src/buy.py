@@ -4,10 +4,11 @@
 import collections
 import logging
 import pprint
+import ConfigParser
 
 # 3rd party
 import argh
-import ConfigParser
+
 from retry import retry
 
 # local
@@ -147,6 +148,11 @@ def available_btc(b):
     return avail
 
 
+def record_buy(order_id, mkt, rate, amount):
+    db.buy.insert(
+        order_id=order_id, market=mkt, purchase_price=rate, amount=amount)
+    db.commit()
+
 def rate_for(b, mkt, btc):
     "Return the rate that works for a particular amount of BTC."
 
@@ -155,7 +161,7 @@ def rate_for(b, mkt, btc):
     orders = b.get_orderbook(mkt, SELL_ORDERBOOK)
     for order in orders['result']:
         btc_spent += order['Rate'] * order['Quantity']
-        if btc_spent > btc:
+        if btc_spent > 1.2* btc:
             break
 
     coin_amount = btc / order['Rate']
@@ -194,12 +200,7 @@ def _buycoin(c, b, mkt, btc):
     r = b.buy_limit(mkt, amount_of_coin, rate)
     if r['success']:
         print "Buy was a success = {}".format(r)
-        takeprofit = get_takeprofit(c)
-        new_rate = profitable_rate(rate, takeprofit)
-        "Let sell  b.sell_limit(mkt, amount_of_coin, new_rate)"
-        rs = b.sell_limit(mkt, amount_of_coin, new_rate)
-        pprint.pprint(rs)
-
+        record_buy(r['result']['uuid'], mkt, rate, amount_of_coin)
 
 def buycoin(c, b, n, min_volume=0):
     "Buy top N cryptocurrencies."
